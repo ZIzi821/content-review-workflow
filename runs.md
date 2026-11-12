@@ -53,3 +53,23 @@
   - `data/eval_local.csv` 的 SHA-256：`cc37d939be5e7507d6864792ceb0ebb37ca09cd89701c67b14a4ae5534e79087`
   - 测试集（id、text、gold_label 三列）的 SHA-256 前 16 位：`8e5492447868265f`
 - 分批输入：`eval/batches/dev_01.json`、`dev_02.json`（各 20 条），`test_01.json` 到 `test_04.json`（各 20 条），每项只含 `id` 和 `text`。
+
+## 阶段 C：工作流 `content_review_v1`
+
+- 2026-11-13 约 03:46：创建工作流 `content_review_v1`（workflow_id 7707362021931548713），节点配置见 `workflow/nodes.md`。
+- 模型：豆包·2.0·mini·260428，温度 0，深度思考关闭；阈值 `THRESHOLD = 0.7`。
+- 代码节点单独测试（扣子 IDE“测试代码”）：输入 `llm={"label":"广告引流","rule_id":"R6","evidence":"加我V",...}`、`text=加我V领资料`，输出 `need_review=false`、`check_errors` 为空，符合预期；0 Tokens。
+- 2026-11-13 04:25–04:28：画布试运行 5 条开发集样本（每类至少 1 条，含 1 条边界样本）：
+
+| id | 真实标签 | 输出 label | rule_id | confidence | route | check_errors | Tokens | 用时 |
+|---|---|---|---|---|---|---|---|---|
+| e009 | 攻击辱骂 | 正常 | （空） | 0.6 | 人工复核 | （空） | 799 | 3s |
+| e110 | 歧视偏见 | 歧视偏见 | R4 | 0.8 | 自动标注 | （空） | 797 | 2s |
+| e006 | 正常（反偏见） | 正常 | （空） | 0.9 | 自动标注 | （空） | 796 | 2s |
+| e038 | 广告引流 | 广告引流 | R6 | 0.95 | 自动标注 | （空） | 800 | 2s |
+| e116 | 正常（边界：提到“私信”） | 正常 | （空） | 0.9 | 自动标注 | （空） | 786 | 2s |
+
+  - 跑 e110 时 id 输入框没换过来，结束节点输出的 id 仍是 e009，不影响判定结果。
+  - 5 条试跑结束后，空间总积分由 120 变为 119。积分只显示整数，单次消耗无法精确到小数。
+- 截图：`screenshots/C1_canvas_content_review_v1.jpg`（画布全貌，各节点运行成功）、`screenshots/C2_trial_run_e009.jpg`（一次试运行的输出）。
+- 2026-11-13 04:28：发布 `content_review_v1` 版本 v0.0.1（版本描述：Prompt v1，豆包·2.0·mini，温度 0，阈值 0.7）。
