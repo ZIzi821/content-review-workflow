@@ -1,0 +1,3 @@
+# 工作流原始输出按 LF 换行保存，runs.md 里的 SHA-256 是对 LF 版本算的；
+# 固定换行符，避免在 Windows（core.autocrlf=true）上检出后校验值对不上。
+results/raw/*.csv text eol=lf

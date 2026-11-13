@@ -27,3 +27,13 @@
    - 解析前先去掉 ```json 代码块标记。
    - 已检索规则编号只从规则标题“【R…”里取。如果从整段检索文本里匹配 `R\d+`，会把正文里“按 R2”这类交叉引用也算进来，`rule_not_retrieved` 就查不出问题了。
 4. **结束节点多输出一个 `id`**：方便评测时对齐样本。
+
+## 其余 3 个工作流
+
+| 工作流 | 与上面的区别 |
+|---|---|
+| `content_review_v2` | 复制 `content_review_v1`，只把大模型节点的系统提示词换成 `prompts/v2.md`，其余节点、参数和阈值完全相同 |
+| `content_review_eval` | 开始（`items`: Array<Object>{id, text}）→ 批处理（并行运行数量 5，批处理次数上限 100；批处理体内是工作流节点 `content_review_v1`，输入 `text`、`id` 分别引用批处理 `item.text`、`item.id`，开启“异常忽略”）→ 代码（`workflow/eval_code_node.py`，输入 7 个数组：id、label、rule_id、confidence、route、check_errors、evidence）→ 结束（`results_csv`、`count`） |
+| `content_review_eval_v2` | 复制 `content_review_eval`，把批处理体内的节点换成 `content_review_v2`，批处理的 7 个输出改为引用 v2 节点的对应字段 |
+
+指南原计划只建一个评测工作流、换批处理体内的节点来分别跑 v1 和 v2。实际做法是复制出第二个评测工作流，这样两版各有一个固定的评测入口，测试集跑 v1 时不需要再改画布。
